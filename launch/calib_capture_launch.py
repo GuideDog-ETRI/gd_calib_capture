@@ -8,7 +8,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'camera_topic',
-            default_value='/camera_topic',
+            default_value='/zed/zed_node/left_raw/image_raw_color',
             description='Topic name for the camera'
         ),
         DeclareLaunchArgument(

@@ -41,6 +41,8 @@ class CalibCaptureNode(Node):
         self.camera_received = False
         self.lidar_received = False
 
+        self.point_cloud = []
+
     def image_callback(self, msg):
         self.get_logger().info('Received camera data')
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -69,11 +71,11 @@ class CalibCaptureNode(Node):
 
     def lidar_callback(self, msg):
         self.get_logger().info('Received LiDAR data')
-        point_cloud = []
+        
         for point in pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True):
-            point_cloud.append([point[0], point[1], point[2]])
+            self.point_cloud.append([point[0], point[1], point[2]])
         pc = o3d.geometry.PointCloud()
-        pc.points = o3d.utility.Vector3dVector(np.array(point_cloud))
+        pc.points = o3d.utility.Vector3dVector(np.array(self.point_cloud))
         filename = '{}_{}.pcd'.format(self.pcd_file_prefix, self.time)
         o3d.io.write_point_cloud(filename, pc)
         self.lidar_received = True
