@@ -8,12 +8,13 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'camera_topic',
-            default_value='/zed/zed_node/left_raw/image_raw_color',
+            # default_value='/zed/zed_node/left_raw/image_raw_color',
+            default_value='/camera/camera/color/image_raw',
             description='Topic name for the camera'
         ),
         DeclareLaunchArgument(
             'lidar_topic',
-            default_value='/lidar_topic',
+            default_value='/ouster/points',
             description='Topic name for the LiDAR'
         ),
         DeclareLaunchArgument(

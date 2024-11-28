@@ -31,24 +31,27 @@ class CalibCaptureNode(Node):
             Image,
             camera_topic,
             self.image_callback,
-            10)
+            1)
         self.lidar_subscription = self.create_subscription(
             PointCloud2,
             lidar_topic,
             self.lidar_callback,
-            10)
+            1)
         self.time = self.get_clock().now().to_msg().sec
         self.camera_received = False
         self.lidar_received = False
+        self.lidar_counter = 0
 
         self.point_cloud = []
 
     def image_callback(self, msg):
-        self.get_logger().info('Received camera data')
-        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        filename = '{}_{}.png'.format(self.image_file_prefix, self.time)
-        cv2.imwrite(filename, cv_image)
-        self.camera_received = True
+        self.get_logger().info('Received Camera Data')
+        if self.lidar_received:
+            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            filename = '{}_{}.png'.format(self.image_file_prefix, self.time)
+            cv2.imwrite(filename, cv_image)
+            self.camera_received = True
+            
         self.check_all_received()
 
 
@@ -61,25 +64,30 @@ class CalibCaptureNode(Node):
     #     self.lidar_received = True
     #     self.check_all_received()
 
-    def convert_image_msg_to_cv2(self, img_msg):
-        height = img_msg.height
-        width = img_msg.width
-        channels = 3  # Assuming RGB8 encoding
-        bytes_per_channel = 1
-        img_data = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(height, width, channels)
-        return img_data
+    # def convert_image_msg_to_cv2(self, img_msg):
+    #     height = img_msg.height
+    #     width = img_msg.width
+    #     channels = 3  # Assuming RGB8 encoding
+    #     bytes_per_channel = 1
+    #     img_data = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(height, width, channels)
+    #     return img_data
 
     def lidar_callback(self, msg):
-        self.get_logger().info('Received LiDAR data')
+        self.lidar_counter = self.lidar_counter+1
+        self.get_logger().info(f'Received LiDAR data... {self.lidar_counter}')
         
         for point in pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True):
             self.point_cloud.append([point[0], point[1], point[2]])
-        pc = o3d.geometry.PointCloud()
-        pc.points = o3d.utility.Vector3dVector(np.array(self.point_cloud))
-        filename = '{}_{}.pcd'.format(self.pcd_file_prefix, self.time)
-        o3d.io.write_point_cloud(filename, pc)
-        self.lidar_received = True
+
+        if self.lidar_counter >= 10:
+            pc = o3d.geometry.PointCloud()
+            pc.points = o3d.utility.Vector3dVector(np.array(self.point_cloud))
+            filename = '{}_{}.pcd'.format(self.pcd_file_prefix, self.time)
+            o3d.io.write_point_cloud(filename, pc)
+            self.lidar_received = True
+
         self.check_all_received()
+            
 
     # def convert_pointcloud2_to_open3d(self, cloud_msg):
     #     points = []
